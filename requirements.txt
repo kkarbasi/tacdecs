@@ -1,0 +1,8 @@
+numpy
+Pillow
+python-dateutil
+scikit-image
+scikit-learn
+scipy
+numpydoc
+matplotlib
