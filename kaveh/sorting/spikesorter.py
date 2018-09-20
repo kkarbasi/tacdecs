@@ -7,8 +7,6 @@ Author: Kaveh Karbasi <kkarbasi@berkeley.edu>
 import numpy as np
 from sklearn.mixture import GaussianMixture
 import scipy.signal
-from kaveh.plots import axvlines
-from matplotlib import pyplot as plt
 import scipy.fftpack
 from scipy.stats import norm
 
@@ -179,9 +177,10 @@ class SimpleSpikeSorter:
         # Remove detected cs that don't produce a pause in simple spikes for pause_time
         to_delete = []
         for i, csi in enumerate(self.cs_indices):
-            if (self.get_spike_indices()[np.squeeze(np.where(self.get_spike_indices() == csi)) + 1] - csi) \
-               * self.dt < self.post_cs_pause_time:
-                to_delete = to_delete + [i]
+            if (self.get_spike_indices()[-1] != csi):
+		    if (self.get_spike_indices()[np.squeeze(np.where(self.get_spike_indices() == csi)) + 1] - csi) \
+		       * self.dt < self.post_cs_pause_time:
+			to_delete = to_delete + [i]
         mask = np.ones(self.cs_indices.shape, dtype = bool)
         mask[to_delete] = False
         self.cs_indices = self.cs_indices[mask]

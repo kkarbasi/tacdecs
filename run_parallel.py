@@ -1,7 +1,5 @@
 from smr import File
 import numpy as np
-from matplotlib import pyplot as plt
-from kaveh.plots import axvlines
 from kaveh.sorting.spikesorter import SimpleSpikeSorter
 from joblib import Parallel, delayed
 import multiprocessing
@@ -17,10 +15,11 @@ import os
 
 def processInputFile(arg):
     input_fn, output_fn = arg
+    print('reading {} ...'.format(input_fn))
     smr_content = File(input_fn)
     smr_content.read_channels()
     voltage_chan = smr_content.get_channel(0)
-
+    print('processing {}...'.format(input_fn))
     sss = SimpleSpikeSorter(voltage_chan.data, voltage_chan.dt)
     sss.freq_range = (0, 5000)
     sss.cs_cov_type = 'tied'
@@ -46,11 +45,12 @@ for root, dirnames, filenames in os.walk(source_path):
             path_to_mkdir = os.path.join(target_path, os.path.relpath(root, source_path))
             if not os.path.exists(path_to_mkdir):
                 os.makedirs(path_to_mkdir)
-            print('Found smr file: '.format(os.path.join(root, filename)))
+            print('Found smr file: {}'.format(os.path.join(root, filename)))
 	    input_filename = os.path.join(root, filename)
             output_filename = os.path.join(path_to_mkdir, filename + '.pkl')
 	    process_inputs = process_inputs + [(input_filename, output_filename)]
 
 num_cores = multiprocessing.cpu_count()
+num_cores = 12
 print('Number of cores to be used = {}'.format(num_cores))     
-Parallel(n_jobs=18, verbose=1)(map(delayed(processInputFile), process_inputs))
+Parallel(n_jobs = num_cores, verbose=1)(map(delayed(processInputFile), process_inputs))

@@ -1,7 +1,5 @@
 from smr import File
 import numpy as np
-from matplotlib import pyplot as plt
-from kaveh.plots import axvlines
 from kaveh.sorting.spikesorter import SimpleSpikeSorter
 
 try:
@@ -13,10 +11,10 @@ import fnmatch
 import os
 
 
-# source_path = '../data/raw_data/'
-source_path = '/mnt/papers/Herzfeld_Nat_Neurosci_2018/raw_data/2006/Oscar/O89/'
-# target_path = '../data/auto_processed/'
-target_path = '/mnt/data/temp/kaveh/'
+source_path = '../data/raw_data/'
+#source_path = '/mnt/papers/Herzfeld_Nat_Neurosci_2018/raw_data/2006/Oscar/O89/'
+target_path = '../data/auto_processed/'
+#target_path = '/mnt/data/temp/kaveh/'
 
 print('Recursive dir search on {}'.format(source_path))
 found_source = 0
@@ -36,7 +34,7 @@ for root, dirnames, filenames in os.walk(source_path):
 #             idx_end = int(np.round(t_end / voltage_chan.dt))
 #             prange = slice(idx_0, idx_end)
 
-            sss = SimpleSpikeSorter(voltage_chan.data, voltage_chan.dt)
+            sss = SimpleSpikeSorter(voltage_chan.data[0:20500], voltage_chan.dt)
             sss.freq_range = (0, 5000)
             sss.cs_cov_type = 'tied'
             sss.cs_num_gmm_components = 4
