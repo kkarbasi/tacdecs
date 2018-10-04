@@ -81,6 +81,8 @@ class SimpleSpikeSorter:
         for i, spike_index in enumerate(self.spike_indices[1:]):
             if (spike_index - pre_index) <=(self.spike_indices[i] + post_index):
                 to_delete = to_delete + [i]
+        if self.spike_indices[-1] + post_index >= self.voltage.size:
+            to_delete = to_delete + [self.spike_indices.size - 1]
         mask = np.ones(self.spike_indices.shape, dtype=bool)
         mask[to_delete] = False
         no_overlap_spike_indices = self.spike_indices[mask]
@@ -99,11 +101,11 @@ class SimpleSpikeSorter:
 
         if use_filtered:
             self.aligned_spikes = np.array([self.voltage_filtered[i - pre_index : i + post_index ] 
-                for i in spike_indices if i not in to_exclude and (i + post_index) <= self.voltage_filtered.size
+                for i in spike_indices if i not in to_exclude and (i + post_index) < self.voltage_filtered.size
                     and (i - pre_index) >= 0])
         else:
             self.aligned_spikes = np.array([self.voltage[i - pre_index : i + post_index ] 
-                for i in spike_indices if i not in to_exclude and (i + post_index) <= self.voltage.size
+                for i in spike_indices if i not in to_exclude and (i + post_index) < self.voltage.size
                     and (i - pre_index) >= 0])
 
             
@@ -132,7 +134,7 @@ class SimpleSpikeSorter:
             powers.append(power_spectrum[mask])
         max_powers = np.asarray(max_powers)
         powers = np.array(powers)
-        return max_powers, powers, xf 
+        return max_powers, powers, xf[mask] 
 
     def _cluster_spike_waveforms_by_freq(self, plot_hist = False):
         """
@@ -178,9 +180,9 @@ class SimpleSpikeSorter:
         to_delete = []
         for i, csi in enumerate(self.cs_indices):
             if (self.get_spike_indices()[-1] != csi):
-		    if (self.get_spike_indices()[np.squeeze(np.where(self.get_spike_indices() == csi)) + 1] - csi) \
-		       * self.dt < self.post_cs_pause_time:
-			to_delete = to_delete + [i]
+                if (self.get_spike_indices()[np.squeeze(np.where(self.get_spike_indices() == csi)) + 1] - csi) \
+                   * self.dt < self.post_cs_pause_time:
+                    to_delete = to_delete + [i]
         mask = np.ones(self.cs_indices.shape, dtype = bool)
         mask[to_delete] = False
         self.cs_indices = self.cs_indices[mask]
