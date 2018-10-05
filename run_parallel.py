@@ -11,7 +11,7 @@ except ModuleNotFoundError:
     
 import fnmatch
 import os
-
+from psutil import virtual_memory
 
 def processInputFile(arg):
     input_fn, output_fn = arg
@@ -48,9 +48,17 @@ for root, dirnames, filenames in os.walk(source_path):
             print('Found smr file: {}'.format(os.path.join(root, filename)))
 	    input_filename = os.path.join(root, filename)
             output_filename = os.path.join(path_to_mkdir, filename + '.pkl')
-	    process_inputs = process_inputs + [(input_filename, output_filename)]
-
+	    if not os.path.exists(output_filename):
+	   	 process_inputs = process_inputs + [(input_filename, output_filename)]
 num_cores = multiprocessing.cpu_count()
-num_cores = 12
-print('Number of cores to be used = {}'.format(num_cores))     
-Parallel(n_jobs = num_cores, verbose=1)(map(delayed(processInputFile), process_inputs))
+#num_cores = 6
+mem = virtual_memory()
+mem_total = mem.total/(1024*1024)
+num_cores = mem_total/42000
+print('Using {} processes based on available memory: {}MB'.format(num_cores, mem_total))
+
+#print('Number of cores to be used = {}'.format(num_cores))     
+for i in np.arange(0, len(input_filename), num_cores):
+	print('Running from {} to {}'.format(i, i+num_cores))
+	Parallel(n_jobs = num_cores, verbose=1)(map(delayed(processInputFile), process_inputs[i:i+num_cores]))
+	
