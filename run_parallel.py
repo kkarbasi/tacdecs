@@ -31,9 +31,9 @@ def processInputFile(arg):
 	
 
 
-source_path = '../data/raw_data/'
+source_path = '../scratch/raw_data/'
 #source_path = '/mnt/papers/Herzfeld_Nat_Neurosci_2018/raw_data/2006/Oscar/O89/'
-target_path = '../data/auto_processed/'
+target_path = '../scratch/auto_processed/'
 #target_path = '/mnt/data/temp/kaveh/'
 
 process_inputs = []
@@ -58,7 +58,7 @@ num_cores = mem_total/42000
 print('Using {} processes based on available memory: {}MB'.format(num_cores, mem_total))
 
 #print('Number of cores to be used = {}'.format(num_cores))     
-for i in np.arange(0, len(input_filename), num_cores):
+for i in np.arange(0, len(process_inputs), num_cores):
 	print('Running from {} to {}'.format(i, i+num_cores))
 	Parallel(n_jobs = num_cores, verbose=1)(map(delayed(processInputFile), process_inputs[i:i+num_cores]))
 	

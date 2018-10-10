@@ -2,11 +2,11 @@
 
 #SBATCH
 #SBATCH --job-name=KavehJob2
-#SBATCH --time=72:0:0
+#SBATCH --time=5:0:0
 #SBATCH --partition=lrgmem
 #SBATCH --mem=1000G
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=48
+##SBATCH --nodes=1
+#SBATCH --ntasks-per-node=32
 #SBATCH --cpus-per-task=1
 
 module reset

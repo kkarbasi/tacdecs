@@ -83,6 +83,8 @@ class SimpleSpikeSorter:
                 to_delete = to_delete + [i]
         if self.spike_indices[-1] + post_index >= self.voltage.size:
             to_delete = to_delete + [self.spike_indices.size - 1]
+	if self.spike_indices[0] - pre_index < 0:
+	    to_delete = [0] + to_delete
         mask = np.ones(self.spike_indices.shape, dtype=bool)
         mask[to_delete] = False
         no_overlap_spike_indices = self.spike_indices[mask]

@@ -2,17 +2,23 @@
 while true
 do 
 	clear;
-	echo -------------Current submitted MARCC jobs-----------;
+	echo -------------MARCC Job Monitoring-------------------;
 	sqme; 
+	printf "%*s\n" $(tput cols) '' | tr ' ' -
 	echo -------------Current team\'s MARCC balance----------; 
 	sbalance; 
+	printf "%*s\n" $(tput cols) '' | tr ' ' -
 	echo -------------$1 Content \(tail\)--------; 
-	tail $1; 
+	tail $1;
+	printf "%*s\n" $(tput cols) '' | tr ' ' -
+	echo -------------$2 Content \(tail\)--------;
+	tail $2 
+	printf "%*s\n" $(tput cols) '' | tr ' ' -
 	echo -------------Number of "readings"-------------------;
 	cat $1 | grep reading | wc -l;
+	printf "%*s\n" $(tput cols) '' | tr ' ' -
 	echo -------------Number of "writings"-------------------; 
 	cat $1 | grep writing | wc -l; 
-	echo --------------$2 Content \(tail\)-------; 
-	tail $2;  
-	sleep 200; 
+	printf "%*s\n" $(tput cols) '' | tr ' ' -
+	sleep 30; 
 done
