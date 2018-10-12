@@ -12,7 +12,24 @@ except ModuleNotFoundError:
 import fnmatch
 import os
 from psutil import virtual_memory
+import time
+import functools
 
+
+def with_timeout(timeout):
+    def decorator(decorated):
+        @functools.wraps(decorated)
+        def inner(*args, **kwargs):
+            pool = multiprocessing.pool.ThreadPool(1)
+            async_result = pool.apply_async(decorated, args, kwargs)
+            try:
+                return async_result.get(timeout)
+            except multiprocessing.TimeoutError:
+                return
+        return inner
+    return decorator
+
+@with_timeout(1800)
 def processInputFile(arg):
     input_fn, output_fn = arg
     print('reading {} ...'.format(input_fn))
@@ -54,11 +71,11 @@ num_cores = multiprocessing.cpu_count()
 #num_cores = 6
 mem = virtual_memory()
 mem_total = mem.total/(1024*1024)
-num_cores = mem_total/42000
+num_cores = mem_total/82000
 print('Using {} processes based on available memory: {}MB'.format(num_cores, mem_total))
 
 #print('Number of cores to be used = {}'.format(num_cores))     
 for i in np.arange(0, len(process_inputs), num_cores):
-	print('Running from {} to {}'.format(i, i+num_cores))
+	print('Running from {} to {} out of {} processes'.format(i, i+num_cores, len(process_inputs)))
 	Parallel(n_jobs = num_cores, verbose=1)(map(delayed(processInputFile), process_inputs[i:i+num_cores]))
 	

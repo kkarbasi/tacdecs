@@ -33,10 +33,15 @@ class SimpleSpikeSorter:
         self.post_cs_pause_time = 0.015 #s
 
     def run(self):
+	print('pre-processing...')
         self._pre_process()
+	print('detect spikes...')
         self._detect_spikes()
+	print('align spikes...')
         self._align_spikes()
+	print('cluster spikes...')
         self._cluster_spike_waveforms_by_freq()
+	print('post processing...')
         self._cs_post_process()
 
 
