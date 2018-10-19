@@ -7,10 +7,9 @@ Author: Kaveh Karbasi <kkarbasi@berkeley.edu>
 import numpy as np
 from sklearn.mixture import GaussianMixture
 import scipy.signal
-from kaveh.plots import axvlines
-from matplotlib import pyplot as plt
 import scipy.fftpack
 from scipy.stats import norm
+import time
 
 class SimpleSpikeSorter:
     """ Class that detects and sorts simple spikes"""
@@ -35,15 +34,21 @@ class SimpleSpikeSorter:
         self.post_cs_pause_time = 0.015 #s
 
     def run(self):
+	start = time.time()
         self._pre_process()
+	print('Pre-process time = {}'.format(time.time() - start))
         delta = int(self.minibatch_thresh / self.dt)
         if delta >= self.voltage_filtered.size:
             self._detect_spikes()
         else:
             self._detect_spikes_minibatch()
+ 	print('Spike detection time = {}'.format(time.time() - start))
         self._align_spikes()
+ 	print('Align spikes time = {}'.format(time.time() - start))
         self._cluster_spike_waveforms_by_freq()
+ 	print('CS spike detection time = {}'.format(time.time() - start))
         self._cs_post_process()
+ 	print('CS post process time = {}'.format(time.time() - start))
 
 
     def _pre_process(self):
@@ -98,13 +103,13 @@ class SimpleSpikeSorter:
         The loop is on each slices of the signal with size minibatch_thresh
         """
         print('Using minibatch spike detection, batch size = {}s'.format(self.minibatch_thresh))
-        delta = int(50/self.dt)
+        delta = int(self.minibatch_thresh/self.dt)
         self.spike_indices = np.array([], dtype='int64')
-        for i in np.arange(0, self.voltage_filtered.size, delta):
+        for i in np.arange(0, self.voltage_filtered.size - int(10/self.dt), delta):
             curr_indices = self._detect_spikes_from_range(slice(i, i + delta)) 
             curr_indices = curr_indices + i
             self.spike_indices = np.concatenate((self.spike_indices, curr_indices), axis=None)
-
+	
     
     def _remove_overlapping_spike_windows(self):
         """
@@ -137,14 +142,16 @@ class SimpleSpikeSorter:
         pre_index = int(np.round(self.pre_window / self.dt))
         post_index = int(np.round(self.post_window / self.dt))
         spike_indices = self._remove_overlapping_spike_windows()
+	signal_size_f = self.voltage_filtered.size
+	signal_size = self.voltage.size
 
         if use_filtered:
             self.aligned_spikes = np.array([self.voltage_filtered[i - pre_index : i + post_index ] 
-                for i in spike_indices if i not in to_exclude and (i + post_index) < self.voltage_filtered.size
+                for i in spike_indices if i not in to_exclude and (i + post_index) < signal_size_f
                     and (i - pre_index) >= 0])
         else:
             self.aligned_spikes = np.array([self.voltage[i - pre_index : i + post_index ] 
-                for i in spike_indices if i not in to_exclude and (i + post_index) < self.voltage.size
+                for i in spike_indices if i not in to_exclude and (i + post_index) < signal_size
                     and (i - pre_index) >= 0])
 
             
@@ -217,9 +224,10 @@ class SimpleSpikeSorter:
         """
         # Remove detected cs that don't produce a pause in simple spikes for pause_time
         to_delete = []
+	spike_indices = self.get_spike_indices()
         for i, csi in enumerate(self.cs_indices):
-            if (self.get_spike_indices()[-1] != csi):
-                if (self.get_spike_indices()[np.squeeze(np.where(self.get_spike_indices() == csi)) + 1] - csi) \
+            if (spike_indices[-1] != csi):
+                if (spike_indices[np.squeeze(np.where(spike_indices == csi)) + 1] - csi) \
                    * self.dt < self.post_cs_pause_time:
                     to_delete = to_delete + [i]
         mask = np.ones(self.cs_indices.shape, dtype = bool)

@@ -29,7 +29,7 @@ def with_timeout(timeout):
         return inner
     return decorator
 
-@with_timeout(1800)
+@with_timeout(9600)
 def processInputFile(arg):
     input_fn, output_fn = arg
     print('reading {} ...'.format(input_fn))
@@ -71,7 +71,7 @@ num_cores = multiprocessing.cpu_count()
 #num_cores = 6
 mem = virtual_memory()
 mem_total = mem.total/(1024*1024)
-num_cores = mem_total/82000
+num_cores = mem_total/32000
 print('Using {} processes based on available memory: {}MB'.format(num_cores, mem_total))
 
 #print('Number of cores to be used = {}'.format(num_cores))     
