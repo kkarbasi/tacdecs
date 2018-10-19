@@ -121,12 +121,12 @@ class SimpleSpikeSorter:
         post_index = int(np.round(self.post_window / self.dt))
 
         for i, spike_index in enumerate(self.spike_indices[1:]):
-            if (spike_index - pre_index) <=(self.spike_indices[i] + post_index):
+            if (spike_index - pre_index) <=(self.spike_indices[i] + post_index) or self.spike_indices[i] - pre_index < 0:
                 to_delete = to_delete + [i]
         if self.spike_indices[-1] + post_index >= self.voltage.size:
             to_delete = to_delete + [self.spike_indices.size - 1]
-        if self.spike_indices[0] - pre_index < 0:
-            to_delete = [0] + to_delete
+#         if self.spike_indices[0] - pre_index < 0:
+#             to_delete = [0] + to_delete
         mask = np.ones(self.spike_indices.shape, dtype=bool)
         mask[to_delete] = False
         no_overlap_spike_indices = self.spike_indices[mask]
@@ -142,17 +142,17 @@ class SimpleSpikeSorter:
         pre_index = int(np.round(self.pre_window / self.dt))
         post_index = int(np.round(self.post_window / self.dt))
         spike_indices = self._remove_overlapping_spike_windows()
-	signal_size_f = self.voltage_filtered.size
-	signal_size = self.voltage.size
+        signal_size_f = self.voltage_filtered.size
+        signal_size = self.voltage.size
 
         if use_filtered:
             self.aligned_spikes = np.array([self.voltage_filtered[i - pre_index : i + post_index ] 
-                for i in spike_indices if i not in to_exclude and (i + post_index) < signal_size_f
-                    and (i - pre_index) >= 0])
+                for i in spike_indices if i not in to_exclude if (i + post_index) < signal_size_f
+                    if (i - pre_index) >= 0])
         else:
             self.aligned_spikes = np.array([self.voltage[i - pre_index : i + post_index ] 
-                for i in spike_indices if i not in to_exclude and (i + post_index) < signal_size
-                    and (i - pre_index) >= 0])
+                for i in spike_indices if i not in to_exclude if (i + post_index) < signal_size
+                    if (i - pre_index) >= 0])
 
             
 
