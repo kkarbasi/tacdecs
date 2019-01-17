@@ -21,5 +21,5 @@ do
 	cat $1 | grep writing | wc -l; 
 	printf "%*s\n" $(tput cols) '' | tr ' ' -
 	find ../scratch/auto_processed -type f -name "*.pkl" | wc -l
-	sleep 30; 
+	sleep 100; 
 done

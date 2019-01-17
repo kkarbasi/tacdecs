@@ -36,15 +36,21 @@ def processInputFile(arg):
     smr_content = File(input_fn)
     smr_content.read_channels()
     voltage_chan = smr_content.get_channel(0)
-    print('processing {}...'.format(input_fn))
-    sss = SimpleSpikeSorter(voltage_chan.data, voltage_chan.dt)
-    sss.freq_range = (0, 5000)
-    sss.cs_cov_type = 'tied'
-    sss.cs_num_gmm_components = 4
-    sss.run()
-    with open(output_fn, 'wb') as output:
-	print('writing {} ...'.format(output_fn))
-	pickle.dump(smr_content, output, pickle.HIGHEST_PROTOCOL)
+    if voltage_chan.data.size > 0 :
+	    print('processing {}...'.format(input_fn))
+	    sss = SimpleSpikeSorter(voltage_chan.data, voltage_chan.dt)
+	    sss.freq_range = (0, 5000)
+	    sss.cs_cov_type = 'tied'
+	    sss.cs_num_gmm_components = 4
+	    sss.run()
+	    sss.voltage = []
+	    sss.voltage_filtered = []
+	    with open(output_fn, 'wb') as output:
+		print('writing {} ...'.format(output_fn))
+		pickle.dump(sss, output, pickle.HIGHEST_PROTOCOL)
+    else:
+	print('No data in channel for {}'.format(input_fn))
+
 	
 
 
@@ -71,7 +77,7 @@ num_cores = multiprocessing.cpu_count()
 #num_cores = 6
 mem = virtual_memory()
 mem_total = mem.total/(1024*1024)
-num_cores = mem_total/32000
+num_cores = mem_total/48000
 print('Using {} processes based on available memory: {}MB'.format(num_cores, mem_total))
 
 #print('Number of cores to be used = {}'.format(num_cores))     

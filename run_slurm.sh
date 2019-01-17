@@ -3,10 +3,10 @@
 #SBATCH
 #SBATCH --job-name=KavehJob2
 #SBATCH --time=24:0:0
-#SBATCH --partition=parallel
-#SBATCH --mem=110G
+#SBATCH --partition=lrgmem
+#SBATCH --mem=1000G
 ##SBATCH --nodes=1
-#SBATCH --ntasks-per-node=24
+#SBATCH --ntasks-per-node=36
 #SBATCH --cpus-per-task=1
 
 module reset
