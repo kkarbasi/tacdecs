@@ -10,6 +10,8 @@ import scipy.signal
 import scipy.fftpack
 from scipy.stats import norm
 import time
+from matplotlib import pyplot as plt
+from kaveh.plots import axvlines
 
 class SimpleSpikeSorter:
     """ Class that detects and sorts simple spikes"""
@@ -31,24 +33,24 @@ class SimpleSpikeSorter:
         self.freq_range = (0, 5000) #Hz
         self.cs_num_gmm_components = 2
         self.cs_cov_type = 'tied'
-        self.post_cs_pause_time = 0.015 #s
+        self.post_cs_pause_time = 0.010 #s
 
     def run(self):
-	start = time.time()
+        start = time.time()
         self._pre_process()
-	print('Pre-process time = {}'.format(time.time() - start))
+        print('Pre-process time = {}'.format(time.time() - start))
         delta = int(self.minibatch_thresh / self.dt)
         if delta >= self.voltage_filtered.size:
             self._detect_spikes()
         else:
             self._detect_spikes_minibatch()
- 	print('Spike detection time = {}'.format(time.time() - start))
+        print('Spike detection time = {}'.format(time.time() - start))
         self._align_spikes()
- 	print('Align spikes time = {}'.format(time.time() - start))
+        print('Align spikes time = {}'.format(time.time() - start))
         self._cluster_spike_waveforms_by_freq()
- 	print('CS spike detection time = {}'.format(time.time() - start))
+        print('CS spike detection time = {}'.format(time.time() - start))
         self._cs_post_process()
- 	print('CS post process time = {}'.format(time.time() - start))
+        print('CS post process time = {}'.format(time.time() - start))
 
 
     def _pre_process(self):
@@ -78,7 +80,9 @@ class SimpleSpikeSorter:
         all_spike_indices = np.squeeze(np.where(cluster_labels == spikes_cluster))
         # Find peaks of each spike
         peak_times,_ = scipy.signal.find_peaks(self.voltage_filtered[all_spike_indices])
-        self.spike_indices = all_spike_indices[peak_times]
+        spike_indices = all_spike_indices[peak_times]
+        spike_peaks = np.array([np.argmax(self.voltage[si - int(0.0005/self.dt) : si + int(0.002/self.dt)]) for si in spike_indices])
+        self.spike_indices = spike_indices + spike_peaks - int(0.0005/self.dt)
 
     # TODO
     def _detect_spikes_from_range(self, prange):
@@ -95,6 +99,9 @@ class SimpleSpikeSorter:
         # Find peaks of each spike
         peak_times,_ = scipy.signal.find_peaks(voltage_signal[all_spike_indices])
         spike_indices = all_spike_indices[peak_times]
+        spike_peaks = np.array([np.argmax(self.voltage[si - int(0.0005/self.dt) : si + int(0.002/self.dt)]) for si in spike_indices])
+        spike_indices = spike_indices + spike_peaks - int(0.0005/self.dt)
+
         return spike_indices
 
     def _detect_spikes_minibatch(self):
@@ -181,6 +188,25 @@ class SimpleSpikeSorter:
         max_powers = np.asarray(max_powers)
         powers = np.array(powers)
         return max_powers, powers, xf[mask] 
+    
+    def _find_integral_powers(self):
+        """
+        Finds and returns the maximum power of all aligned spike waveforms in a specified frequency range.
+        freq_range: a tuple of frequency range boundaries (in Hz)
+        """
+        powers = [] 
+        max_powers = []
+        for wf in self.aligned_spikes:
+            yf = scipy.fftpack.fft(wf)
+            N = wf.size
+            xf = np.linspace(0.0, 1.0 / (2.0 * self.dt), N/2)
+            mask = (xf < self.freq_range[1]) & (xf >= self.freq_range[0])
+            power_spectrum = 2.0/N * np.abs(yf[:N//2])
+            max_powers = max_powers + [np.sum(power_spectrum[mask])]
+            powers.append(power_spectrum[mask])
+        max_powers = np.asarray(max_powers)
+        powers = np.array(powers)
+        return max_powers, powers, xf[mask] 
 
     def _cluster_spike_waveforms_by_freq(self, plot_hist = False):
         """
@@ -189,7 +215,7 @@ class SimpleSpikeSorter:
         spike waveforms
         """
         max_powers = self._find_max_powers()[0]
-        gmm = GaussianMixture(self.cs_num_gmm_components, covariance_type = self.cs_cov_type).fit(max_powers.reshape(-1,1))
+        gmm = GaussianMixture(self.cs_num_gmm_components, covariance_type = self.cs_cov_type, random_state=0).fit(max_powers.reshape(-1,1))
         cluster_labels = gmm.predict(max_powers.reshape(-1,1))
         cluster_labels = cluster_labels.reshape(max_powers.shape)
 
@@ -224,7 +250,7 @@ class SimpleSpikeSorter:
         """
         # Remove detected cs that don't produce a pause in simple spikes for pause_time
         to_delete = []
-	spike_indices = self.get_spike_indices()
+        spike_indices = self.get_spike_indices()
         for i, csi in enumerate(self.cs_indices):
             if (spike_indices[-1] != csi):
                 if (spike_indices[np.squeeze(np.where(spike_indices == csi)) + 1] - csi) \
@@ -244,6 +270,7 @@ class SimpleSpikeSorter:
             self.cs_num_gmm_components = gmm_nc
         if cov_type is not None:
             self.cs_cov_type = cov_type
+        self._align_spikes()
         self._cluster_spike_waveforms_by_freq(plot_hist = plot_hist)
         self._cs_post_process()
 
