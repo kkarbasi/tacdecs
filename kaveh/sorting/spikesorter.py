@@ -20,6 +20,7 @@ class SimpleSpikeSorter:
         Object constructor
         """
         self.voltage = np.squeeze(np.array(voltage))
+        self.signal_size = self.voltage.size
         self.dt = dt
         self.low_pass_filter_cutoff = 10000 #Hz
         self.high_pass_filter_cutoff = 1000 #Hz
@@ -40,7 +41,7 @@ class SimpleSpikeSorter:
         self._pre_process()
         print('Pre-process time = {}'.format(time.time() - start))
         delta = int(self.minibatch_thresh / self.dt)
-        if delta >= self.voltage_filtered.size:
+        if delta >= self.signal_size:
             self._detect_spikes()
         else:
             self._detect_spikes_minibatch()
@@ -71,6 +72,8 @@ class SimpleSpikeSorter:
     def _detect_spikes(self):
         """
         Preliminary spike detection using a Gaussian Mixture Model
+        Second edit: changed the detected index to be the peak of the raw signal 
+        in order to help with future alignment to the peak of the spike waveforms.
         """
         gmm = GaussianMixture(self.num_gmm_components,
                 covariance_type = 'tied').fit(self.voltage_filtered.reshape(-1,1))
@@ -81,8 +84,12 @@ class SimpleSpikeSorter:
         # Find peaks of each spike
         peak_times,_ = scipy.signal.find_peaks(self.voltage_filtered[all_spike_indices])
         spike_indices = all_spike_indices[peak_times]
-        spike_peaks = np.array([np.argmax(self.voltage[si - int(0.0005/self.dt) : si + int(0.002/self.dt)]) for si in spike_indices])
+        spike_peaks = np.array([np.argmax(self.voltage[max(0, si - int(0.0005/self.dt)) :
+             si + int(0.002/self.dt)]) for si in spike_indices])
         self.spike_indices = spike_indices + spike_peaks - int(0.0005/self.dt)
+        if self.spike_indices[0] < 0:
+            self.spike_indices[0] = spike_peaks[0]
+
 
     # TODO
     def _detect_spikes_from_range(self, prange):
@@ -90,6 +97,7 @@ class SimpleSpikeSorter:
         Preliminary spike detection using a Gaussian Mixture Model, using only a range of signal
         """
         voltage_signal = self.voltage_filtered[prange]
+        signal_unfiltered = self.voltage[prange]
         gmm = GaussianMixture(self.num_gmm_components,
                 covariance_type = 'tied').fit(voltage_signal.reshape(-1,1))
         cluster_labels = gmm.predict(voltage_signal.reshape(-1,1))
@@ -99,9 +107,12 @@ class SimpleSpikeSorter:
         # Find peaks of each spike
         peak_times,_ = scipy.signal.find_peaks(voltage_signal[all_spike_indices])
         spike_indices = all_spike_indices[peak_times]
-        spike_peaks = np.array([np.argmax(self.voltage[si - int(0.0005/self.dt) : si + int(0.002/self.dt)]) for si in spike_indices])
+        first_index = spike_indices[0]
+        spike_peaks = np.array([np.argmax(signal_unfiltered[max(0, si - int(0.0005/self.dt)) : si + int(0.002/self.dt)]) for si in spike_indices])
         spike_indices = spike_indices + spike_peaks - int(0.0005/self.dt)
-
+        # in case the first window is less then the 0.0005/dt
+        if spike_indices[0] < 0:
+            spike_indices[0] = spike_peaks[0]
         return spike_indices
 
     def _detect_spikes_minibatch(self):
@@ -149,14 +160,14 @@ class SimpleSpikeSorter:
         pre_index = int(np.round(self.pre_window / self.dt))
         post_index = int(np.round(self.post_window / self.dt))
         spike_indices = self._remove_overlapping_spike_windows()
-        signal_size_f = self.voltage_filtered.size
-        signal_size = self.voltage.size
 
         if use_filtered:
+            signal_size_f = self.voltage_filtered.size
             self.aligned_spikes = np.array([self.voltage_filtered[i - pre_index : i + post_index ] 
                 for i in spike_indices if i not in to_exclude if (i + post_index) < signal_size_f
                     if (i - pre_index) >= 0])
         else:
+            signal_size = self.voltage.size
             self.aligned_spikes = np.array([self.voltage[i - pre_index : i + post_index ] 
                 for i in spike_indices if i not in to_exclude if (i + post_index) < signal_size
                     if (i - pre_index) >= 0])
