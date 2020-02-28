@@ -56,7 +56,7 @@ def processInputFile(arg):
 
 source_path = '../scratch/raw_data/'
 #source_path = '/mnt/papers/Herzfeld_Nat_Neurosci_2018/raw_data/2006/Oscar/O89/'
-target_path = '../scratch/auto_processed/'
+target_path = '../scratch/auto_processed_spike_sort/'
 #target_path = '/mnt/data/temp/kaveh/'
 
 process_inputs = []

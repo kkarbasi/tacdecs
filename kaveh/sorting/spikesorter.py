@@ -37,7 +37,7 @@ class SimpleSpikeSorter:
         self.post_cs_pause_time = 0.010 #s
 
     def run(self):
-        start = time.time()
+        #start = time.time()
         self._pre_process()
         print('Pre-process time = {}'.format(time.time() - start))
         delta = int(self.minibatch_thresh / self.dt)
@@ -45,13 +45,13 @@ class SimpleSpikeSorter:
             self._detect_spikes()
         else:
             self._detect_spikes_minibatch()
-        print('Spike detection time = {}'.format(time.time() - start))
-        self._align_spikes()
-        print('Align spikes time = {}'.format(time.time() - start))
-        self._cluster_spike_waveforms_by_freq()
-        print('CS spike detection time = {}'.format(time.time() - start))
-        self._cs_post_process()
-        print('CS post process time = {}'.format(time.time() - start))
+        #print('Spike detection time = {}'.format(time.time() - start))
+        #self._align_spikes()
+        #print('Align spikes time = {}'.format(time.time() - start))
+        #self._cluster_spike_waveforms_by_freq()
+        #print('CS spike detection time = {}'.format(time.time() - start))
+        #self._cs_post_process()
+        #print('CS post process time = {}'.format(time.time() - start))
 
 
     def _pre_process(self):
